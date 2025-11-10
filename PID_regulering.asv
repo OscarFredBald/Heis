@@ -1,0 +1,109 @@
+%% Heis-PID-simulering (matcher Arduino-verdier)
+clear; clc;
+
+% --- "Config.h" lignende parametre ---
+MIN_FLOOR        = 1;
+MAX_FLOOR        = 4;
+TICKS_PER_FLOOR  = 8450;   % posisjonsskala (enkoder-ticks per etasje)
+POS_TOLERANCE    = 200;    % stoppkriterium (ticks)
+dt               = 0.02;   % 20 ms (samme som i koden)
+
+% --- PID (fra DC_motor.h/.cpp) ---
+Kp = 0.5;
+Ki = 0.01;
+Kd = 0.05;
+motor_speed_max = 255/2;     % metning (PWM 0..255)
+
+% --- Velg start- og mål-etasje ---
+startFloor  = 1;
+targetFloor = 3;
+
+% --- Interne initialer ---
+x  = (startFloor - MIN_FLOOR) * TICKS_PER_FLOOR;   % posisjon (ticks)
+xd = (targetFloor - MIN_FLOOR) * TICKS_PER_FLOOR;  % ønsket posisjon (ticks)
+v  = 0;                 % motor/aksel-hastighet (ticks/s)
+e_prev = 0; e_int = 0;  % PID-tilstander
+
+% --- Enkel DC-motor modell (1.-ordens hastighetsdynamikk) ---
+% v' = (-v + k*u)/tau  -> juster k og tau ved behov
+k_v  = 20;     % [ticks/s] per kontrollenhet (ved stasjonær tilstand)
+tau  = 0.15;   % [s] tidskonstant motor/last
+
+% --- Simulering ---
+Tmax = 15;                       % maks simuleringstid (s)
+N    = ceil(Tmax/dt);
+
+log_t  = zeros(N,1);
+log_x  = zeros(N,1);
+log_v  = zeros(N,1);
+log_u  = zeros(N,1);
+log_e  = zeros(N,1);
+stopAt = NaN;
+
+for k = 1:N
+    t = (k-1)*dt;
+
+    % PID (samme form som i Arduino-koden)
+    e    = xd - x;                          % posisjonsfeil (ticks)
+    edot = (e - e_prev)/dt;                 % differanseledd
+    e_int = e_int + e*dt;                   % integralledd (Ki=0 => ingen effekt, men beholdt)
+    u    = Kp*e + Ki*e_int + Kd*edot;       % styring før metning
+
+    % Metning (samme som i koden)
+    u = max(-motor_speed_max, min(motor_speed_max, u));
+
+    % Motor-/akselmodell (diskret Euler)
+    dv = (-v + k_v*u)/tau;
+    v  = v + dv*dt;             % [ticks/s]
+    x  = x + v*dt;              % [ticks]
+
+    % Logg
+    log_t(k) = t;
+    log_x(k) = x;
+    log_v(k) = v;
+    log_u(k) = u;
+    log_e(k) = e;
+
+    % Stopp når vi er "på etasje" (samme idé som POS_TOLERANCE)
+    if abs(e) < POS_TOLERANCE && isnan(stopAt)
+        stopAt = t;
+        % valgfritt: brems hardt / kutt u (slik Arduino ville stoppe motoren):
+        % v = 0;  % enkel hard-stopp
+        % break;  % om du vil avslutte simulasjonen med en gang
+    end
+end
+
+% --- Plot ---
+figure(1); clf;
+
+subplot(3,1,1);
+plot(log_t, log_x/TICKS_PER_FLOOR + MIN_FLOOR, 'LineWidth', 1.6); hold on;
+yline(targetFloor, '--');
+ylabel('Etasje');
+title('Heisposisjon (etasje)');
+grid on;
+
+subplot(3,1,2);
+plot(log_t, log_u, 'LineWidth', 1.6);
+ylabel('u (PWM ~ -255..255)');
+title('PID-utgang (mettet)');
+grid on;
+
+subplot(3,1,3);
+plot(log_t, log_v, 'LineWidth', 1.6);
+ylabel('v (ticks/s)'); xlabel('Tid [s]');
+title('Hastighet');
+grid on;
+
+if ~isnan(stopAt)
+    fprintf('Ankom mål innen toleranse etter %.2f s.\n', stopAt);
+else
+    fprintf('Nådde ikke toleranse innen %.2f s.\n', Tmax);
+end
+
+% Vis også posisjonsfeil over tid (valgfritt)
+figure(2); clf;
+plot(log_t, log_e, 'LineWidth', 1.6);
+yline(POS_TOLERANCE, '--'); yline(-POS_TOLERANCE, '--');
+title('Posisjonsfeil (ticks)'); xlabel('Tid [s]'); ylabel('e = xd - x');
+grid on;
