@@ -32,7 +32,7 @@ int Hall_buttons::hall_buttons() {
       } else if (c == 'd' && floor > MIN_FLOOR) {
         // ned-forespørsel
         Serial.print("Hall Down "); Serial.println(floor);
-        return floor;
+        return -floor;
       }
     }
   }

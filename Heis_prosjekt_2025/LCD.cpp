@@ -21,6 +21,11 @@ void LCD::show_floor(int f) {
 
 // Viser en melding på linje 2 (status eller info)
 void LCD::show_msg(const char* txt) {
+  _lcd.display();
+  _lcd.noBlink();
+  _lcd.noCursor();
+  
+  
   _lcd.setCursor(0, 1);                 // flytt til andre linje
   _lcd.print("                ");       // skriv 16 mellomrom for å slette tidligere tekst
   _lcd.setCursor(0, 1);                 // flytt tilbake til starten av linjen

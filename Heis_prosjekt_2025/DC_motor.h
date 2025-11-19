@@ -10,7 +10,7 @@ public:
   void dc_motor_setup();  
 
   // En PID-oppdatering per tidssteg: beregner reguleringssignal basert på posisjonsfeil og kaller motor_control()
-  // current_position = målt posisjon (f.eks. fra encoder), dt_s = tidssteg i sekunder'
+  // current_position = målt posisjon (fra encoder), dt_s = tidssteg i sekunder'
   void update_pid(long current_position, float dt_s);
 
   // Sender reguleringssignal til motoren: retning via PHASE, hastighet via PWM på ENABLE, ev. DECAY-modus

@@ -47,4 +47,10 @@ private:
 
   // finner nærmeste etasje basert på nåværende posisjon i "ticks"
   int  ticks_to_floor(long ticks) const;  // definert i Elevator.cpp
+
+  enum StatusMsg { ST_IDLE, ST_EMERGENCY, ST_OVERWEIGHT, ST_DOOR_OPEN, ST_DOOR_CLOSE, ST_MOVE, ST_NONE, ST_MOVE_UP, ST_MOVE_DOWN };
+StatusMsg _lastStatus = ST_NONE;
+unsigned long _lastStatusMs = 0;
+void show_status(StatusMsg s, const char* txt, uint16_t min_interval_ms);
+
 };
