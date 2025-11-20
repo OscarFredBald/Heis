@@ -10,9 +10,9 @@ void Hall_buttons::hall_buttons_setup() {
 // hall_buttons() skal lese tastaturet (f.eks. "2u" eller "3d")
 // Returner -1 hvis ingen ny gyldig input
 int Hall_buttons::hall_buttons() {
-  static int pendingFloor = -1;  // husker tall før u/d
+  static int pendingFloor = -1;                     // husker tall før u/d
   while (Serial.available() > 0) {
-    char c = tolower(Serial.read());           // les neste tegn og gjør små bokstaver
+    char c = tolower(Serial.read());                // les neste tegn og gjør små bokstaver
     int f = (c >= '0' && c <= '9') ? c - '0' : -1;  // sjekk om tallet er 0–9
 
     if (f != -1) {
@@ -56,13 +56,13 @@ int Elevator_buttons::read_pressed() {
   for (int f = 1; f <= 4; ++f) {             // Sjekk etasje-knapp 1..4
     int i = f - 1;                           // Array-indeks 0..3
     bool lvl = digitalRead(_pins[i]);        // Les nivå (LOW = trykket, HIGH = sluppet)
-    if (now - _last_ms[i] >= DEBOUNCE_MS) {  // Debounce: kun vurder hvis det er gått nok tid
+    if (now - _last_ms[i] >= DEBOUNCE_MS) {  // Debounce
       if (_last[i] == LOW && lvl == HIGH) {  // Edge-deteksjon: forrige LOW og nå HIGH (slipp-øyeblikket)
         _last[i] = lvl;                      // Oppdater forrige nivå til nåværende
         _last_ms[i] = now;                   // Oppdater debounce-tidsstempel
         return f;                            // Rapporter knapp f (her på slipp-edge)
       }
-      _last[i] = lvl;                        // Ingen edge → bare lagre nivå
+      _last[i] = lvl;                        // Ingen edge -> bare lagre nivå
       _last_ms[i] = now;                     // Oppdater debounce-tid
     }
   }
@@ -77,7 +77,7 @@ Emergency_button::Emergency_button(uint8_t pin)
   _last_ms(0) {}                             // Ingen debounce-tidsstempel ved start
 
 void Emergency_button::emergency_setup() {
-  pinMode(_pin, INPUT_PULLUP);               // Sett knappen som INPUT_PULLUP (trykk → LOW)
+  pinMode(_pin, INPUT_PULLUP);               // Sett knappen som INPUT_PULLUP (trykk -> LOW)
   _last_level = digitalRead(_pin);           // Les og lagre første nivå som referanse
   _last_ms = millis();                       // Start debounce-tidsstempel
 }
@@ -87,7 +87,7 @@ void Emergency_button::emergency_update() {
   if (now - _last_ms < DEBOUNCE_MS) return;  // Debounce-lås: ignorer hvis for kort tid siden sist
 
   bool level = digitalRead(_pin);            // Les nåværende nivå (LOW når trykket)
-  if (_last_level == HIGH && level == LOW) { // FALLING edge: HIGH→LOW (nytt trykk registrert)
+  if (_last_level == HIGH && level == LOW) { // FALLING edge: HIGH -> LOW (nytt trykk registrert)
     _active = !_active;                      // Toggle latchet status ved hvert trykk
   }
   _last_level = level;                       // Oppdater forrige nivå

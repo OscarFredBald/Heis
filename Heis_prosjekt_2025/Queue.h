@@ -13,11 +13,11 @@ public:
   void queue_setup();   // Kalles i setup() (Elevator.cpp) for å initialisere datastrukturen (typisk nullstille arrays)
 
   // legg til forespørsler
-  void add_inside(int floor); // Når passasjeren trykker på knapp for etasje i heisen
-  void add_hall_up(int floor); // Når noen i gangen trykker på "opp"-knappen i gitt etasje
+  void add_inside(int floor);    // Når passasjeren trykker på knapp for etasje i heisen
+  void add_hall_up(int floor);   // Når noen i gangen trykker på "opp"-knappen i gitt etasje
   void add_hall_down(int floor); // Når noen trykker på "ned"-knappen i gitt etasje
 
-  // hovedfunksjon
+  // Hovedfunksjon
   // Kalles jevnlig av hovedprogrammet for å finne ut hvor heisen skal kjøre neste gang.
   // Den bestemmer neste target-etasje i henhold til krav REQ16 (SCAN-prinsippet).
   // Returnerer -1 hvis det ikke finnes noen forespørsel.
@@ -35,11 +35,11 @@ public:
  
 private:  //HJELPEFUNKSJONER OG DATA
   
-   // Konverterer etasje-nummer (MIN_FLOOR..MAX_FLOOR) til en gyldig indeks (0..N-1)
+  // Konverterer etasje-nummer (MIN_FLOOR..MAX_FLOOR) til en gyldig indeks (0..N-1)
   // Eksempel: hvis MIN_FLOOR=1 og du spør om idx(3) -> returnerer 2
   int idx(int floor) const { return floor - MIN_FLOOR; } 
 
- // Arrays som representerer hvilke etasjer som har aktive forespørsler.
+  // Arrays som representerer hvilke etasjer som har aktive forespørsler.
   // inside[f] = knapp trykket i heisen
   // hall_up[f] = noen vil opp fra denne etasjen
   // hall_down[f] = noen vil ned fra denne etasjen

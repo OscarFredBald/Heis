@@ -11,9 +11,9 @@ public:
   // Tar inn to digitale pin-numre: A og B, som kobles til enkoderens utganger.
   Encoder(uint8_t pinA, uint8_t pinB);
 
-    // SETUP
-    // Kalles i setup()-delen av programmet.
-    // Setter opp pinMode() for enkoder-pinnene og aktiverer eventuelle interrupts (ISR-er)
+  // SETUP
+  // Kalles i setup()-delen av programmet.
+  // Setter opp pinMode() for enkoder-pinnene og aktiverer eventuelle interrupts (ISR-er)
   void  encoder_setup();
 
   // POSISJON 
@@ -38,8 +38,8 @@ public:
   // Arduino krever at ISR-funksjoner er "static" (de kan ikke tilhøre et bestemt objekt).
   // Derfor lages statiske "bro-funksjoner" som peker til riktig Encoder-instans.
   // instance peker til det ene Encoder-objektet som brukes.
-  static void isrA(); // Kalles automatisk når pin A endrer tilstand
-  static void isrB(); // Kalles automatisk når pin B endrer tilstand
+  static void isrA();       // Kalles automatisk når pin A endrer tilstand
+  static void isrB();       // Kalles automatisk når pin B endrer tilstand
   static Encoder* instance; // Static peker slik at ISR-funksjonene vet hvilken encoder de tilhører
  
 private:

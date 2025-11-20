@@ -8,9 +8,9 @@ DC_motor::DC_motor(uint8_t pin_enable, uint8_t pin_phase, uint8_t pin_decay)
   _pin_decay(pin_decay),                // lagre DECAY-pin (bremse-/freewheel-modus på driver)
   desired_position(0),                  // start-settpunkt (ønsket posisjon) = 0
   control_signal(0.0f),                 // sist beregnede kontrollsignal (for logging/diagnose)
-  motor_speed_max(255),                 // maks PWM (full fart, kan evt. senkes til f.eks. 180)
+  motor_speed_max(255),                 // maks PWM
   pid_signal(0.0f),                     // PID-utgang u = 0 ved start
-  Kp(0.01f), Ki(0.0005f), Kd(0.00f),        // PID-parametere (P = 0.12 som i rapporten)
+  Kp(0.01f), Ki(0.0005f), Kd(0.00f),    // PID-parametere
   _e_prev(0),                           // forrige feil e[k-1] = 0
   _e_int(0.0f)                          // integrert feil (sum e*dt) = 0
 {}
@@ -21,7 +21,7 @@ void DC_motor::dc_motor_setup() {
   pinMode(_pin_phase,  OUTPUT);         // PHASE som utgang (retning)
   pinMode(_pin_decay,  OUTPUT);         // DECAY som utgang (bremse-/freewheel-modus)
 
-  digitalWrite(_pin_decay, LOW);        // typisk "fast decay"/freewheel (avhenger av driver)
+  digitalWrite(_pin_decay, LOW);        // typisk "fast decay"/freewheel
   analogWrite(_pin_enable, 0);          // motor av ved oppstart (PWM=0)
 }
 
@@ -31,26 +31,26 @@ void DC_motor::update_pid(long current_position, float dt_s) {
   // 1) Feil (ønsket - målt)
   long e = desired_position - current_position;
 
-  // 🔹 Deadband: hvis vi er veldig nær settpunktet, sett feil = 0 og nullstill I-leddet
-  const long DEADBAND_TICKS = 10;                 // juster f.eks. til 5, 10, 20 etter behov
+  //  Deadband for å hindre mikrojustering nær målposisjon
+  const long DEADBAND_TICKS = 10;                 // område rundt ønsket posisjon der små feil ignoreres
   if (labs(e) < DEADBAND_TICKS) {
-    e     = 0;
-    _e_int = 0.0f;                                // fjern oppbygd integralled når vi er "fremme"
+    e     = 0;                                    // behandle systemet som om det er i mål
+    _e_int = 0.0f;                                // nullstill integrator for å hindre oppbygging nær målområdet
   }
 
   // 2) Derivert av feil (D-ledd)
   float edot = 0.0f;
   if (dt_s > 0.0f) {
-    edot = float(e - _e_prev) / dt_s;            // (e[k] - e[k-1]) / dt
+    edot = float(e - _e_prev) / dt_s;             // (e[k] - e[k-1]) / dt
   }
 
   // 3) Integrert feil (I-ledd)
   _e_int += e * dt_s;
 
-  // Anti-windup: begrens integralleddet
-  const float I_MAX = 20000.0f;                  // kan justeres ned/opp
-  if (_e_int >  I_MAX) _e_int =  I_MAX;
-  if (_e_int < -I_MAX) _e_int = -I_MAX;
+  // Anti-windup: hindrer at integratorverdien vokser ukontrollert
+  const float I_MAX = 20000.0f;          // maksimal tillatt størrelse på integrator
+  if (_e_int >  I_MAX) _e_int =  I_MAX;  // begrens positiv verdi
+  if (_e_int < -I_MAX) _e_int = -I_MAX;  // begrens negativ verdi
 
   // 4) PID-utgang
   pid_signal = Kp * e + Ki * _e_int + Kd * edot;
@@ -59,7 +59,7 @@ void DC_motor::update_pid(long current_position, float dt_s) {
   if (pid_signal >  motor_speed_max) pid_signal =  motor_speed_max;
   if (pid_signal < -motor_speed_max) pid_signal = -motor_speed_max;
 
-  control_signal = pid_signal;                   // lagre for logging/diagnose
+  control_signal = pid_signal;            // lagres for logging/diagnose
 
   // 6) Send kontrollsignalet til motoren
   motor_control(control_signal);

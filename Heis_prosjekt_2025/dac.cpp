@@ -1,8 +1,7 @@
-
-//#include "Arduino.h
-
+#include "Arduino.h
 #include "dac.h"
 
+// Kopiert fra undervisningsmateriale
 
 #define LDACPIN_LOW  ( PORTC &= B01111111 ) // PC7 = D30
 #define LDACPIN_HIGH ( PORTC |= B10000000 )
@@ -29,7 +28,6 @@ DDRC |= B11110000;
   set_dac (0,0);	
 	
 }
-
 
 
 void set_dac ( int value_a, int value_b )

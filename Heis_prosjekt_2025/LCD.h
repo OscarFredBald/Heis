@@ -9,15 +9,15 @@ public:
 
   // SETUP 
   // Kalles i Arduino sin setup() for å initialisere LCD-displayet:
-  //  - starter kommunikasjon
-  //  - definerer hvor mange kolonner og rader displayet har (f.eks. 16x2)
+  // - starter kommunikasjon
+  // - definerer hvor mange kolonner og rader displayet har (f.eks. 16x2)
   void LCD_setup();
 
   // VIS ETASJE 
   // Viser gjeldende etasje på LCD-skjermen, f.eks. "Floor: 3"
   void show_floor(int f);
 
-   // VIS MELDING
+  // VIS MELDING
   // Skriver en tekststreng på LCD-displayet, f.eks. "Door Opening..."
   void show_msg(const char* txt);
 private:

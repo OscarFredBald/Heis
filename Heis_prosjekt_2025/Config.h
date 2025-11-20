@@ -7,14 +7,14 @@ static const int MAX_FLOOR = 4;                 // Høyeste etasje-nummer
 
 // Konvertering mellom encoder-ticks og fysisk etasjehøyde
 static const long TICKS_PER_FLOOR = 8250;      // Antall enkoder-tikk per etasje 
-static const long POS_TOLERANCE   = 8.25f;        // Tillatt posisjonsavvik (± tikk) når vi sier at vi "er fremme", 
-static const float DT_DEFAULT_S   = 0.01f;      // tidssteg i sekunder for reguleringssløyfer (f.eks. PID) 
+static const long POS_TOLERANCE   = 8.25f;     // Tillatt posisjonsavvik (+- tikk) når vi sier at vi "er fremme", 
+static const float DT_DEFAULT_S   = 0.01f;     // tidssteg i sekunder for reguleringssløyfer (f.eks. PID) 
 
 // Pin-mapping for innvendige etasjeknapper (fire knapper for 1..4)
 static const uint8_t BTN_INSIDE[4] = {22, 23, 24, 25};  // Digitalpinner koblet til etasjeknappene i heisen
 
 // Pin-mapping for etasje-LEDs (viser hvilken etasje som er aktiv)
-static const uint8_t LED_FLOOR[4]  = {49, 48, 47, 46};  // Én LED per etasje 1..4
+static const uint8_t LED_FLOOR[4]  = {49, 48, 47, 46};  // En LED per etasje 1..4
 
 // Enkoderpinner (kvadratur A/B) for posisjonsmåling
 static const uint8_t ENC_A = 20;               // Enkoder kanal A (må være interrupt-kapabel pin)

@@ -3,59 +3,61 @@
 
 // Konstruktør: initialiserer alle medlemmer i riktig rekkefølge
 Elevator::Elevator()
-: _current_floor(MIN_FLOOR),                        // start i nederste etasje
-  _direction(DIR_IDLE),                             // start uten bevegelse
-  _door_closed(true),                               // antar dør lukket initialt
+: _current_floor(MIN_FLOOR),                           // start i nederste etasje
+  _direction(DIR_IDLE),                                // start uten bevegelse
+  _door_closed(true),                                  // antar dør lukket initialt
   _lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7), // LCD-pinner
-  _over(A_OVER, 700),                               // overvekt-sensor på A0, terskel 700
-  _queue(),                                         // tom forespørselkø
-  _buttons(BTN_INSIDE, EMER_PIN),                   // innvendige knapper + nødknapp gjennom aggregator
-  _door(ST_ENA, ST_PHA, ST_ENB, ST_PHB, 200),       // stepmotor for dør: EN/PHA/ENB/PHB, 200 steps
-  _enc(ENC_A, ENC_B),                               // enkoder A/B
-  _dc(DC_EN, DC_PH, DC_DCY),                        // DC-motor pinner (enable/phase/decay)
-  _leds(LED_FLOOR),                                 // etasje-LED-pinner
-  _prev_ms(0),                                      // for dt-beregning
-  _servicing(false)                                 // ikke i gang med en jobb enda
-{}                                                  // tom konstruktørkropp
+  _over(A_OVER, 700),                                  // overvekt-sensor på A0, terskel 700
+  _queue(),                                            // tom forespørselkø
+  _buttons(BTN_INSIDE, EMER_PIN),                      // innvendige knapper + nødknapp gjennom aggregator
+  _door(ST_ENA, ST_PHA, ST_ENB, ST_PHB, 200),          // stepmotor for dør: EN/PHA/ENB/PHB, 200 steps
+  _enc(ENC_A, ENC_B),                                  // enkoder A/B
+  _dc(DC_EN, DC_PH, DC_DCY),                           // DC-motor pinner (enable/phase/decay)
+  _leds(LED_FLOOR),                                    // etasje-LED-pinner
+  _prev_ms(0),                                         // for dt-beregning
+  _servicing(false)                                    // ikke i gang med en jobb enda
+{}                                                     // tom konstruktørkropp
 
 void Elevator::setup() {
-  Serial.begin(115200);                             // serie for debug/tastatur
-  dac_init();                                       // init DAC (hvis brukt i prosjektet)
-  set_dac(2200, 2200);                              // referanse til AIOSL
+  Serial.begin(115200);                                // serie for debug/tastatur
+  dac_init();                                          // init DAC (hvis brukt i prosjektet)
+  set_dac(2200, 2200);                                 // referanse til AIOSL
 
-  _lcd.show_msg("Starter opp"); delay(500);         // status på LCD
-  _door.opendoor(); delay(500);                     // kjapp dørtest
+  _lcd.show_msg("Starter opp"); delay(500);            // status på LCD
+  _door.opendoor(); delay(500);                        // kjapp dørtest
   _door.closedoor(); delay(500);
 
-  _lcd.LCD_setup();                                 // init LCD (16x2) og vis “Heis klar”
+  _lcd.LCD_setup();                                    // init LCD (16x2) og vis “Heis klar”
   _lcd.show_msg("Init");
 
-  _over.overweight_setup();                         // init overvekt-sensor (pinMode)
-  _queue.queue_setup();                             // init kø
-  _buttons.hall.hall_buttons_setup();               // hall-knapper (PC-tastatur)
-  _buttons.elev.setup();                            // innvendige knapper (INPUT_PULLUP)
-  _door.step_motor_setup();                         // konfigurer stepmotorpinner
-  _enc.encoder_setup();                             // sett opp ISR på enkoder A/B
-  _dc.dc_motor_setup();                             // sett motorpinner, stopp motor
-  _leds.LED_setup();                                // klargjør etasje-LEDs
+  _over.overweight_setup();                            // init overvekt-sensor (pinMode)
+  _queue.queue_setup();                                // init kø
+  _buttons.hall.hall_buttons_setup();                  // hall-knapper (PC-tastatur)
+  _buttons.elev.setup();                               // innvendige knapper (INPUT_PULLUP)
+  _door.step_motor_setup();                            // konfigurer stepmotorpinner
+  _enc.encoder_setup();                                // sett opp ISR på enkoder A/B
+  _dc.dc_motor_setup();                                // sett motorpinner, stopp motor
+  _leds.LED_setup();                                   // klargjør etasje-LEDs
 
-  // 🔧 PID-tuning samlet ett sted (match med rapporten)
+  //  PID-tuning
 
-  _dc.motor_speed_max = 255;   // evt. 180 for mykere bevegelse
+  _dc.motor_speed_max = 255;                           // PWM
 
-  _leds.floor_indicator(_current_floor);            // vis start-etasje LED
-  _lcd.show_floor(_current_floor);                  // vis start-etasje LCD
-  _lcd.show_msg("Klar");                            // klar-status
+  _leds.floor_indicator(_current_floor);               // vis start-etasje LED
+  _lcd.show_floor(_current_floor);                     // vis start-etasje LCD
+  _lcd.show_msg("Klar");                               // klar-status
 
-  _buttons.emergency.emergency_setup();             // init nødknapp
+  _buttons.emergency.emergency_setup();                // init nødknapp
 }
 
 void Elevator::show_status(StatusMsg s, const char* txt, uint16_t min_interval_ms) {
   unsigned long now = millis();
+  // Oppdater displayet hvis statusen har endret seg,
+  // eller hvis det har gått lenge nok siden sist oppdatering
   if (s != _lastStatus || (now - _lastStatusMs) > min_interval_ms) {
-    _lcd.show_msg(txt);            // din robuste versjon (display(), noBlink(), blank linje, etc.)
-    _lastStatus = s;
-    _lastStatusMs = now;
+    _lcd.show_msg(txt);   // viser statusmeldingen på LCD uten å spamme displayet kontinuerlig
+    _lastStatus = s;      // lagrer forrige status for neste sammenligning
+    _lastStatusMs = now;  // tidsstempel for siste statusoppdatering
   }
 }
 
@@ -93,13 +95,13 @@ void Elevator::arrive_at_floor(int f) {
 
 void Elevator::loop() {
   
-  unsigned long now = millis();                     // felles "nå"-tidspunkt for denne loopen
+  unsigned long now = millis();     //  felles "nå"-tidspunkt for denne loopen
 
   // 0) Telemetri til Serial Studio - kjører alltid, uansett om heisen står eller går
 static unsigned long lastLogMs = 0;
 const unsigned long LOG_DT_MS = 200;
 
-if (now - lastLogMs >= LOG_DT_MS) {         // <-- denne kjører alltid
+if (now - lastLogMs >= LOG_DT_MS) { //  denne kjører alltid
   lastLogMs = now;
 
   long ticks = _enc.get_position();
@@ -121,11 +123,11 @@ if (_buttons.emergency.is_active()) {
 }
 
   // 1) Innvendige knapper (edge-detect)
-  int insideReq = _buttons.elev.read_pressed();       // -1 eller 1..4
+  int insideReq = _buttons.elev.read_pressed();           // -1 eller 1..4
   if (insideReq >= MIN_FLOOR && insideReq <= MAX_FLOOR) {
-    _queue.add_inside(insideReq);                     // legg til inside request
-    _servicing = true;                                // vi har en jobb
-    _lcd.show_msg("Inside req");                      // status
+    _queue.add_inside(insideReq);                         // legg til inside request
+    _servicing = true;                                    // vi har en jobb
+    _lcd.show_msg("Inside req");                          // status
   }
 
   // 2) Hall-knapper via tastatur (implementert i Hall_buttons::hall_buttons)
@@ -158,7 +160,7 @@ if (hallReq != 0) {
 auto floor_from_ticks_dir = [&](long ticks, Dir dir) {
   double f_rel = double(ticks) / double(TICKS_PER_FLOOR);  // 0.0 = MIN_FLOOR, 1.0 = neste, ...
   double base  = MIN_FLOOR + f_rel;                        // faktisk etasjenivå i flyttall
-  // Retningsbasert avrunding:
+  //  Retningsbasert avrunding:
   //  - Når vi går opp, tar vi "gulv" (nederste hele etasje under oss)
   //  - Når vi går ned, tar vi "tak" (øverste hele etasje over oss)
   int f = (dir == DIR_DOWN) ? int(ceil(base)) : int(floor(base));
@@ -184,13 +186,13 @@ if (target == -1 && !_queue.any_requests()) {
   float dt = (_prev_ms == 0) ? DT_DEFAULT_S : (now - _prev_ms) / 1000.0f;
   _prev_ms = now;
 
-  // 6) Ingen mål → stå i ro
+  // 6) Ingen mål -> stå i ro
   if (target == -1) {
   _direction = DIR_IDLE;
   _dc.stop();
 
   static unsigned long lastIdleMsg = 0;
-  if (millis() - lastIdleMsg > 300) {  // skriv “Idle” maks ~3 ganger/sek
+  if (millis() - lastIdleMsg > 300) {  // skriv “Idle” maks 3 ganger/sek
     _lcd.show_msg("Idle");
     lastIdleMsg = millis();
   }
@@ -199,15 +201,15 @@ if (target == -1 && !_queue.any_requests()) {
 
   // 7) Bevegelse mellom etasjer (dør må være lukket for å kjøre)
   if (_door_closed) {
-    _dc.desired_position = floor_to_ticks(target);      // ønsket posisjon (ticks)
-    _dc.update_pid(_enc.get_position(), dt);            // PID-oppdatering mot settpunkt
+    _dc.desired_position = floor_to_ticks(target);         // ønsket posisjon (ticks)
+    _dc.update_pid(_enc.get_position(), dt);               // PID-oppdatering mot settpunkt
 
     long err = _dc.desired_position - _enc.get_position(); // posisjonsfeil i ticks
 
-    // Hvis vi er i service og innen toleranse → vi er fremme
+    // Hvis vi er i service og innen toleranse -> vi er fremme
     if (_servicing && labs(err) < POS_TOLERANCE) {
-      arrive_at_floor(target);                          // kjør dørsekvens + clear
-      _servicing = _queue.any_requests();               // er det mer å gjøre?
+      arrive_at_floor(target);                             // kjør dørsekvens + clear
+      _servicing = _queue.any_requests();                  // er det mer å gjøre?
       // Retningsvalg håndteres i neste queue()-kall (SCAN holder/byter retning)
     }
 
@@ -215,7 +217,7 @@ if (target == -1 && !_queue.any_requests()) {
     if (_direction == DIR_UP)      show_status(ST_MOVE_UP,  "Opp", 300);
 else if (_direction == DIR_DOWN) show_status(ST_MOVE_DOWN,"Ned", 300);
   } else {
-    // Hvis døra sto åpen → lukk før bevegelse
+    // Hvis døra sto åpen -> lukk før bevegelse
     _lcd.show_msg("Lukker dorer");
     _door.closedoor();
     _door_closed = true;

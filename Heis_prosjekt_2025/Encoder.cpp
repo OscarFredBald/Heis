@@ -49,6 +49,3 @@ long Encoder::get_position() const {
   interrupts();            // på igjen
   return v;
 }
-//Dette er fikset nå î
- //Problem: ISR-ene (isrA/isrB) oppdaterer encoder_position mens loop() (hovedtråden) leser den. På 8-bit AVR (f.eks. Arduino Mega) er long 32-bit, 
- //og lesing kan skje i to CPU-operasjoner. Hvis en ISR avbryter midt i lesingen, kan du få en “revet” (torn) verdi.

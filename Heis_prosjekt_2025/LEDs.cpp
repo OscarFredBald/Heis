@@ -2,19 +2,19 @@
 
 
 
-//  KONSTRUKTØR 
-// Konstruktøren mottar et array med 4 pin-numre (én pin per LED).
+// KONSTRUKTØR 
+// Konstruktøren mottar et array med 4 pin-numre (en pin per LED).
 // floor_number settes til MIN_FLOOR slik at heisen starter "på bunn" (etasje 1)
 LEDs::LEDs(const uint8_t pins[4]) : floor_number(MIN_FLOOR) {  // Kopierer pin-numrene fra parameter-arrayet 'pins' til det interne feltet _pins
   for (int i=0;i<4;++i) // Kopierer pin-numrene fra parameter-arrayet 'pins' til det interne feltet _pins
-  _pins[i]=pins[i];  // Lagrer hver pin i objektets egen _pins-array
+  _pins[i]=pins[i];     // Lagrer hver pin i objektets egen _pins-array
 }
 
 // SETUP
 // Kalles i Arduino sin setup() for å klargjøre LED-pinnene.
-void LEDs::LED_setup() { // Løkke som går gjennom alle fire LED-pinnene
+void LEDs::LED_setup() {           // Løkke som går gjennom alle fire LED-pinnene
   for (int i=0;i<4;++i) { 
-    pinMode(_pins[i], OUTPUT);  // Setter hver pin som utgang
+    pinMode(_pins[i], OUTPUT);     // Setter hver pin som utgang
     digitalWrite(_pins[i], LOW); } // Slår av alle LED-ene ved oppstart
 }
 

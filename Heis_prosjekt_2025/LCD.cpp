@@ -1,6 +1,6 @@
 #include "LCD.h"                        
 
-// Konstruktør: tar imot pin-numre for RS, E og D4–D7 og sender dem videre til LiquidCrystal-objektet
+// Konstruktør: tar imot pin-numre for RS, E og D4–D7 og sender dem videre til LCD
 LCD::LCD(uint8_t rs, uint8_t e, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
 : _lcd(rs, e, d4, d5, d6, d7) {}        // bruker initializer-list til å opprette det interne _lcd-objektet
 
