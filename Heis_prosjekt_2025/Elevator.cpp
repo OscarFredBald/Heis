@@ -92,6 +92,27 @@ void Elevator::arrive_at_floor(int f) {
 
 
 void Elevator::loop() {
+  
+  unsigned long now = millis();                     // felles "nå"-tidspunkt for denne loopen
+
+  // 0) Telemetri til Serial Studio - kjører alltid, uansett om heisen står eller går
+static unsigned long lastLogMs = 0;
+const unsigned long LOG_DT_MS = 200;
+
+if (now - lastLogMs >= LOG_DT_MS) {         // <-- denne kjører alltid
+  lastLogMs = now;
+
+  long ticks = _enc.get_position();
+  int  f_est = ticks_to_floor(ticks);
+
+  Serial.print(_dc.desired_position);  Serial.print(',');
+  Serial.print(ticks);                 Serial.print(',');
+  Serial.print(f_est);                 Serial.print(',');
+  Serial.println(_dc.control_signal);
+}
+
+
+  //Nødknapp
   _buttons.emergency.emergency_update();
 if (_buttons.emergency.is_active()) {
   _dc.stop();
@@ -160,7 +181,6 @@ if (target == -1 && !_queue.any_requests()) {
 
 
   // 5) Tidssteg for PID 
-  unsigned long now = millis();
   float dt = (_prev_ms == 0) ? DT_DEFAULT_S : (now - _prev_ms) / 1000.0f;
   _prev_ms = now;
 

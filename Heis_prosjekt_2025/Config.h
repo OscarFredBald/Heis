@@ -7,7 +7,7 @@ static const int MAX_FLOOR = 4;                 // Høyeste etasje-nummer
 
 // Konvertering mellom encoder-ticks og fysisk etasjehøyde
 static const long TICKS_PER_FLOOR = 8250;      // Antall enkoder-tikk per etasje 
-static const long POS_TOLERANCE   = 8.25;        // Tillatt posisjonsavvik (± tikk) når vi sier at vi "er fremme", 
+static const long POS_TOLERANCE   = 8.25f;        // Tillatt posisjonsavvik (± tikk) når vi sier at vi "er fremme", 
 static const float DT_DEFAULT_S   = 0.01f;      // tidssteg i sekunder for reguleringssløyfer (f.eks. PID) 
 
 // Pin-mapping for innvendige etasjeknapper (fire knapper for 1..4)
@@ -47,3 +47,5 @@ enum Dir {DIR_UP=+1, DIR_DOWN=-1, DIR_IDLE=0}; // +1 = opp, -1 = ned, 0 = står 
 
 
 static const uint8_t EMER_PIN = 26;            // Digital pin for emergency-knappen (på servolabben: knapp 4)
+
+

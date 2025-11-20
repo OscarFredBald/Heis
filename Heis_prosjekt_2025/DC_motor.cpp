@@ -10,7 +10,7 @@ DC_motor::DC_motor(uint8_t pin_enable, uint8_t pin_phase, uint8_t pin_decay)
   control_signal(0.0f),                 // sist beregnede kontrollsignal (for logging/diagnose)
   motor_speed_max(255),                 // maks PWM (full fart, kan evt. senkes til f.eks. 180)
   pid_signal(0.0f),                     // PID-utgang u = 0 ved start
-  Kp(0.015f), Ki(0.01f), Kd(0.0f),        // PID-parametere (P = 0.12 som i rapporten)
+  Kp(0.01f), Ki(0.0005f), Kd(0.00f),        // PID-parametere (P = 0.12 som i rapporten)
   _e_prev(0),                           // forrige feil e[k-1] = 0
   _e_int(0.0f)                          // integrert feil (sum e*dt) = 0
 {}
@@ -25,24 +25,32 @@ void DC_motor::dc_motor_setup() {
   analogWrite(_pin_enable, 0);          // motor av ved oppstart (PWM=0)
 }
 
+
 // posisjons-PID-steg: beregn u og send til motoren
 void DC_motor::update_pid(long current_position, float dt_s) {
-  // 1) Feil
-  long e = desired_position - current_position;          // posisjonsfeil: ønsket - målt
+  // 1) Feil (ønsket - målt)
+  long e = desired_position - current_position;
+
+  // 🔹 Deadband: hvis vi er veldig nær settpunktet, sett feil = 0 og nullstill I-leddet
+  const long DEADBAND_TICKS = 10;                 // juster f.eks. til 5, 10, 20 etter behov
+  if (labs(e) < DEADBAND_TICKS) {
+    e     = 0;
+    _e_int = 0.0f;                                // fjern oppbygd integralled når vi er "fremme"
+  }
 
   // 2) Derivert av feil (D-ledd)
   float edot = 0.0f;
   if (dt_s > 0.0f) {
-    edot = float(e - _e_prev) / dt_s;                    // (e[k] - e[k-1]) / dt
+    edot = float(e - _e_prev) / dt_s;            // (e[k] - e[k-1]) / dt
   }
 
   // 3) Integrert feil (I-ledd)
   _e_int += e * dt_s;
 
-  // (valgfri enkel anti-windup, kommenter inn hvis nødvendig)
-  // const float I_MAX = 20000.0f;
-  // if (_e_int >  I_MAX) _e_int =  I_MAX;
-  // if (_e_int < -I_MAX) _e_int = -I_MAX;
+  // Anti-windup: begrens integralleddet
+  const float I_MAX = 20000.0f;                  // kan justeres ned/opp
+  if (_e_int >  I_MAX) _e_int =  I_MAX;
+  if (_e_int < -I_MAX) _e_int = -I_MAX;
 
   // 4) PID-utgang
   pid_signal = Kp * e + Ki * _e_int + Kd * edot;
@@ -51,19 +59,15 @@ void DC_motor::update_pid(long current_position, float dt_s) {
   if (pid_signal >  motor_speed_max) pid_signal =  motor_speed_max;
   if (pid_signal < -motor_speed_max) pid_signal = -motor_speed_max;
 
-  control_signal = pid_signal;                            // lagre for logging/diagnose
+  control_signal = pid_signal;                   // lagre for logging/diagnose
 
   // 6) Send kontrollsignalet til motoren
   motor_control(control_signal);
 
-  // 🔹 Flyttet hit: Serial-logg for posisjoner
-  Serial.print(desired_position);
-  Serial.print(",");
-  Serial.println(current_position);
-
   // 7) Lagre feil for neste tidssteg
   _e_prev = e;
 }
+
 
 // Kjør motor i valgt retning og hastighet basert på kontrollsignal
 void DC_motor::motor_control(float control) {
